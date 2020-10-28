@@ -95,7 +95,9 @@ class DataCollatorWithPadding:
     tokenizer: PreTrainedTokenizerBase
     padding: Union[bool, str, PaddingStrategy] = True
     max_length: Optional[int] = None
-    pad_to_multiple_of: Optional[int] = None
+    #pad_to_multiple_of: Optional[int] = None
+    # I want this to be a mutliple of two to hit faster GPU Kernels
+    pad_to_multiple_of: Optional[int] = 2
 
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         batch = self.tokenizer.pad(
