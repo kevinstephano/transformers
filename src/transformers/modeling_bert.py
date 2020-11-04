@@ -26,6 +26,7 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
+import torch.nn.functional as F
 
 from .activations import ACT2FN
 from .configuration_bert import BertConfig
@@ -55,6 +56,13 @@ from .modeling_utils import (
 )
 from .utils import logging
 
+torch._C._jit_set_nvfuser_enabled(True)
+torch._C._jit_set_texpr_fuser_enabled(False)                                                                                                                                                 
+torch._C._jit_set_profiling_executor(True)                                                                                                                                              
+torch._C._jit_set_profiling_mode(True)                                                                                                                                                  
+torch._C._jit_override_can_fuse_on_cpu(False)                                                                                                                                           
+torch._C._jit_override_can_fuse_on_gpu(False)                                                                                                                                           
+torch._C._jit_set_bailout_depth(20)                                                                                                                                                     
 
 logger = logging.get_logger(__name__)
 
@@ -87,6 +95,14 @@ BERT_PRETRAINED_MODEL_ARCHIVE_LIST = [
     # See all BERT models at https://huggingface.co/models?filter=bert
 ]
 
+@torch.jit.script
+def jit_dropout_add(x, residual, prob) :
+    # type: (Tensor, Tensor, float) -> Tensor
+    # TODO: Bug in Pytorch 19.07 prevents propogation of "training" argument
+    #out = F.dropout(x, p=prob, training=is_training)
+    out = F.dropout(x, p=prob, training=True)
+    out = residual + out
+    return out
 
 def load_tf_weights_in_bert(model, config, tf_checkpoint_path):
     """Load tf checkpoints in a pytorch model."""
@@ -292,7 +308,8 @@ class BertSelfOutput(nn.Module):
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
-        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        hidden_states = hidden_states + input_tensor
+        hidden_states = self.LayerNorm(hidden_states)
         return hidden_states
 
 
@@ -301,6 +318,7 @@ class BertAttention(nn.Module):
         super().__init__()
         self.self = BertSelfAttention(config)
         self.output = BertSelfOutput(config)
+        self.jit_output = torch.jit.script(self.output)
         self.pruned_heads = set()
 
     def prune_heads(self, heads):
@@ -338,7 +356,7 @@ class BertAttention(nn.Module):
             encoder_attention_mask,
             output_attentions,
         )
-        attention_output = self.output(self_outputs[0], hidden_states)
+        attention_output = self.jit_output(self_outputs[0], hidden_states)
         outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them
         return outputs
 
@@ -347,6 +365,8 @@ class BertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
+        #self.dense = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)
+        #self.bias = nn.Parameter(torch.zeros(config.intermediate_size))
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
@@ -354,6 +374,7 @@ class BertIntermediate(nn.Module):
 
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
+        #hidden_states = hidden_states + self.bias
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
@@ -368,7 +389,8 @@ class BertOutput(nn.Module):
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
         hidden_states = self.dropout(hidden_states)
-        hidden_states = self.LayerNorm(hidden_states + input_tensor)
+        hidden_states = hidden_states + input_tensor
+        hidden_states = self.LayerNorm(hidden_states)
         return hidden_states
 
 
@@ -384,7 +406,11 @@ class BertLayer(nn.Module):
             assert self.is_decoder, f"{self} should be used as a decoder model if cross attention is added"
             self.crossattention = BertAttention(config)
         self.intermediate = BertIntermediate(config)
+        #self.jit_intermediate = torch.jit.script(self.intermediate)
+        self.jit_intermediate = self.intermediate
         self.output = BertOutput(config)
+        #self.jit_output = torch.jit.script(self.output)
+        self.jit_output = self.output
 
     def forward(
         self,
@@ -426,8 +452,8 @@ class BertLayer(nn.Module):
         return outputs
 
     def feed_forward_chunk(self, attention_output):
-        intermediate_output = self.intermediate(attention_output)
-        layer_output = self.output(intermediate_output, attention_output)
+        intermediate_output = self.jit_intermediate(attention_output)
+        layer_output = self.jit_output(intermediate_output, attention_output)
         return layer_output
 
 
