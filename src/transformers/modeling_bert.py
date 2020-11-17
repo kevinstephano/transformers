@@ -214,12 +214,14 @@ class BertSelfMiddle(nn.Module):
     def __init__(self, config):
         super().__init__()
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
+        self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
 
     def forward(
         self,
         attention_scores,
         attention_mask
     ):
+        attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         attention_scores = attention_scores + attention_mask
 
@@ -286,10 +288,10 @@ class BertSelfAttention(nn.Module):
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
-        attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-
+        
+        torch.cuda.nvtx.range_push("Softmax Fusion: " + str(attention_scores.size()))
         attention_probs = self.middle(attention_scores, attention_mask)
-
+        torch.cuda.nvtx.range_pop()
         #if attention_mask is not None:
             # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         #    attention_scores = attention_scores + attention_mask
