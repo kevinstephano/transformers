@@ -25,6 +25,7 @@ import shutil
 import warnings
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+import time
 
 
 # Integrations must be imported before ML frameworks:
@@ -421,6 +422,7 @@ class Trainer:
             batch_size=self.args.train_batch_size,
             sampler=train_sampler,
             collate_fn=self.data_collator,
+            pin_memory=True,
             drop_last=self.args.dataloader_drop_last,
             num_workers=self.args.dataloader_num_workers,
         )
@@ -731,9 +733,10 @@ class Trainer:
         self._logging_loss_scalar = 0
         self._total_flos = self.state.total_flos
         model.zero_grad()
-
+        begin = time.time()
         self.control = self.callback_handler.on_train_begin(self.args, self.state, self.control)
 
+        begin_time = time.time()
         for epoch in range(epochs_trained, num_train_epochs):
             if isinstance(train_dataloader, DataLoader) and isinstance(train_dataloader.sampler, DistributedSampler):
                 train_dataloader.sampler.set_epoch(epoch)
@@ -820,6 +823,9 @@ class Trainer:
                     )
             if self.control.should_training_stop:
                 break
+            end_time = time.time()
+            print("ITER> {}".format((end_time - begin_time)*1000.0))
+            begin_time = time.time()
 
         if self.args.past_index and hasattr(self, "_past"):
             # Clean the state at the end of training
@@ -1066,6 +1072,7 @@ class Trainer:
         """
         for k, v in inputs.items():
             if isinstance(v, torch.Tensor):
+                inputs[k] = v.pin_memory()
                 inputs[k] = v.to(self.args.device)
 
         if self.args.past_index >= 0 and self._past is not None:

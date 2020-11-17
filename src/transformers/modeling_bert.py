@@ -57,12 +57,12 @@ from .modeling_utils import (
 from .utils import logging
 
 torch._C._jit_set_nvfuser_enabled(True)
-torch._C._jit_set_texpr_fuser_enabled(False)                                                                                                                                                 
-torch._C._jit_set_profiling_executor(True)                                                                                                                                              
-torch._C._jit_set_profiling_mode(True)                                                                                                                                                  
-torch._C._jit_override_can_fuse_on_cpu(False)                                                                                                                                           
-torch._C._jit_override_can_fuse_on_gpu(False)                                                                                                                                           
-torch._C._jit_set_bailout_depth(20)                                                                                                                                                     
+torch._C._jit_set_texpr_fuser_enabled(False)
+torch._C._jit_set_profiling_executor(True)
+torch._C._jit_set_profiling_mode(True)
+torch._C._jit_override_can_fuse_on_cpu(False)
+torch._C._jit_override_can_fuse_on_gpu(False)
+torch._C._jit_set_bailout_depth(20)
 
 logger = logging.get_logger(__name__)
 
@@ -94,15 +94,6 @@ BERT_PRETRAINED_MODEL_ARCHIVE_LIST = [
     "wietsedv/bert-base-dutch-cased",
     # See all BERT models at https://huggingface.co/models?filter=bert
 ]
-
-@torch.jit.script
-def jit_dropout_add(x, residual, prob) :
-    # type: (Tensor, Tensor, float) -> Tensor
-    # TODO: Bug in Pytorch 19.07 prevents propogation of "training" argument
-    #out = F.dropout(x, p=prob, training=is_training)
-    out = F.dropout(x, p=prob, training=True)
-    out = residual + out
-    return out
 
 def load_tf_weights_in_bert(model, config, tf_checkpoint_path):
     """Load tf checkpoints in a pytorch model."""
@@ -219,6 +210,26 @@ class BertEmbeddings(nn.Module):
         embeddings = self.dropout(embeddings)
         return embeddings
 
+class BertSelfMiddle(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
+
+    def forward(
+        self,
+        attention_scores,
+        attention_mask
+    ):
+        # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
+        attention_scores = attention_scores + attention_mask
+
+        # Normalize the attention scores to probabilities.
+        attention_probs = F.softmax(attention_scores, dim=-1)
+
+        # This is actually dropping out entire tokens to attend to, which might
+        # seem a bit unusual, but is taken from the original Transformer paper.
+        attention_probs = self.dropout(attention_probs)
+        return attention_probs
 
 class BertSelfAttention(nn.Module):
     def __init__(self, config):
@@ -238,6 +249,9 @@ class BertSelfAttention(nn.Module):
         self.value = nn.Linear(config.hidden_size, self.all_head_size)
 
         self.dropout = nn.Dropout(config.attention_probs_dropout_prob)
+        self.middle = BertSelfMiddle(config)
+        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+            self.middle = torch.jit.script(self.middle)
 
     def transpose_for_scores(self, x):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -273,16 +287,19 @@ class BertSelfAttention(nn.Module):
         # Take the dot product between "query" and "key" to get the raw attention scores.
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
-        if attention_mask is not None:
+
+        attention_probs = self.middle(attention_scores, attention_mask)
+
+        #if attention_mask is not None:
             # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
-            attention_scores = attention_scores + attention_mask
+        #    attention_scores = attention_scores + attention_mask
 
         # Normalize the attention scores to probabilities.
-        attention_probs = nn.Softmax(dim=-1)(attention_scores)
+        #attention_probs = nn.Softmax(dim=-1)(attention_scores)
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
-        attention_probs = self.dropout(attention_probs)
+        #attention_probs = self.dropout(attention_probs)
 
         # Mask heads if we want to
         if head_mask is not None:
@@ -301,12 +318,14 @@ class BertSelfAttention(nn.Module):
 class BertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+        self.dense = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
+        self.bias = nn.Parameter(torch.zeros(config.hidden_size))
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
+        hidden_states = hidden_states + self.bias
         hidden_states = self.dropout(hidden_states)
         hidden_states = hidden_states + input_tensor
         hidden_states = self.LayerNorm(hidden_states)
@@ -318,7 +337,8 @@ class BertAttention(nn.Module):
         super().__init__()
         self.self = BertSelfAttention(config)
         self.output = BertSelfOutput(config)
-        self.jit_output = torch.jit.script(self.output)
+        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+            self.output = torch.jit.script(self.output)
         self.pruned_heads = set()
 
     def prune_heads(self, heads):
@@ -356,7 +376,7 @@ class BertAttention(nn.Module):
             encoder_attention_mask,
             output_attentions,
         )
-        attention_output = self.jit_output(self_outputs[0], hidden_states)
+        attention_output = self.output(self_outputs[0], hidden_states)
         outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them
         return outputs
 
@@ -364,9 +384,9 @@ class BertAttention(nn.Module):
 class BertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
-        #self.dense = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)
-        #self.bias = nn.Parameter(torch.zeros(config.intermediate_size))
+        #self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
+        self.dense = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)
+        self.bias = nn.Parameter(torch.zeros(config.intermediate_size))
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
@@ -374,7 +394,7 @@ class BertIntermediate(nn.Module):
 
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
-        #hidden_states = hidden_states + self.bias
+        hidden_states = hidden_states + self.bias
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
@@ -382,12 +402,14 @@ class BertIntermediate(nn.Module):
 class BertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
+        self.dense = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
+        self.bias = nn.Parameter(torch.zeros(config.hidden_size))
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
+        hidden_states = hidden_states + self.bias
         hidden_states = self.dropout(hidden_states)
         hidden_states = hidden_states + input_tensor
         hidden_states = self.LayerNorm(hidden_states)
@@ -406,11 +428,11 @@ class BertLayer(nn.Module):
             assert self.is_decoder, f"{self} should be used as a decoder model if cross attention is added"
             self.crossattention = BertAttention(config)
         self.intermediate = BertIntermediate(config)
-        #self.jit_intermediate = torch.jit.script(self.intermediate)
-        self.jit_intermediate = self.intermediate
+        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+            self.intermediate = torch.jit.script(self.intermediate)
         self.output = BertOutput(config)
-        #self.jit_output = torch.jit.script(self.output)
-        self.jit_output = self.output
+        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+            self.output = torch.jit.script(self.output)
 
     def forward(
         self,
@@ -452,8 +474,8 @@ class BertLayer(nn.Module):
         return outputs
 
     def feed_forward_chunk(self, attention_output):
-        intermediate_output = self.jit_intermediate(attention_output)
-        layer_output = self.jit_output(intermediate_output, attention_output)
+        intermediate_output = self.intermediate(attention_output)
+        layer_output = self.output(intermediate_output, attention_output)
         return layer_output
 
 
