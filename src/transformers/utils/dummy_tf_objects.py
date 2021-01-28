@@ -16,6 +16,29 @@ def tf_top_k_top_p_filtering(*args, **kwargs):
     requires_tf(tf_top_k_top_p_filtering)
 
 
+class TFPreTrainedModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFSequenceSummary:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFSharedEmbeddings:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+def shape_list(*args, **kwargs):
+    requires_tf(shape_list)
+
+
 TF_ALBERT_PRETRAINED_MODEL_ARCHIVE_LIST = None
 
 
@@ -99,6 +122,9 @@ TF_MODEL_FOR_MASKED_LM_MAPPING = None
 
 
 TF_MODEL_FOR_MULTIPLE_CHOICE_MAPPING = None
+
+
+TF_MODEL_FOR_NEXT_SENTENCE_PREDICTION_MAPPING = None
 
 
 TF_MODEL_FOR_PRETRAINING_MAPPING = None
@@ -230,6 +256,15 @@ class TFBartModel:
         requires_tf(self)
 
 
+class TFBartPretrainedModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 TF_BERT_PRETRAINED_MODEL_ARCHIVE_LIST = None
 
 
@@ -325,6 +360,42 @@ class TFBertPreTrainedModel:
         requires_tf(self)
 
 
+class TFBlenderbotForConditionalGeneration:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFBlenderbotModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFBlenderbotSmallForConditionalGeneration:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFBlenderbotSmallModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 TF_CAMEMBERT_PRETRAINED_MODEL_ARCHIVE_LIST = None
 
 
@@ -382,7 +453,87 @@ class TFCamembertModel:
         requires_tf(self)
 
 
+TF_CONVBERT_PRETRAINED_MODEL_ARCHIVE_LIST = None
+
+
+class TFConvBertForMaskedLM:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertForMultipleChoice:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertForQuestionAnswering:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertForSequenceClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertForTokenClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertLayer:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFConvBertPreTrainedModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 TF_CTRL_PRETRAINED_MODEL_ARCHIVE_LIST = None
+
+
+class TFCTRLForSequenceClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
 
 
 class TFCTRLLMHeadModel:
@@ -480,6 +631,45 @@ class TFDistilBertPreTrainedModel:
 
     @classmethod
     def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+TF_DPR_CONTEXT_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST = None
+
+
+TF_DPR_QUESTION_ENCODER_PRETRAINED_MODEL_ARCHIVE_LIST = None
+
+
+TF_DPR_READER_PRETRAINED_MODEL_ARCHIVE_LIST = None
+
+
+class TFDPRContextEncoder:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFDPRPretrainedContextEncoder:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFDPRPretrainedQuestionEncoder:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFDPRPretrainedReader:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFDPRQuestionEncoder:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFDPRReader:
+    def __init__(self, *args, **kwargs):
         requires_tf(self)
 
 
@@ -694,6 +884,15 @@ class TFGPT2DoubleHeadsModel:
         requires_tf(self)
 
 
+class TFGPT2ForSequenceClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 class TFGPT2LMHeadModel:
     def __init__(self, *args, **kwargs):
         requires_tf(self)
@@ -726,6 +925,33 @@ class TFGPT2PreTrainedModel:
         requires_tf(self)
 
 
+class TFLEDForConditionalGeneration:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFLEDModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFLEDPreTrainedModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 TF_LONGFORMER_PRETRAINED_MODEL_ARCHIVE_LIST = None
 
 
@@ -738,7 +964,34 @@ class TFLongformerForMaskedLM:
         requires_tf(self)
 
 
+class TFLongformerForMultipleChoice:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 class TFLongformerForQuestionAnswering:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFLongformerForSequenceClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFLongformerForTokenClassification:
     def __init__(self, *args, **kwargs):
         requires_tf(self)
 
@@ -794,6 +1047,38 @@ class TFLxmertPreTrainedModel:
 
 class TFLxmertVisualFeatureEncoder:
     def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMarian:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMarianMTModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMBartForConditionalGeneration:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMBartModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
         requires_tf(self)
 
 
@@ -878,10 +1163,117 @@ class TFMobileBertPreTrainedModel:
         requires_tf(self)
 
 
+TF_MPNET_PRETRAINED_MODEL_ARCHIVE_LIST = None
+
+
+class TFMPNetForMaskedLM:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetForMultipleChoice:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetForQuestionAnswering:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetForSequenceClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetForTokenClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetMainLayer:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMPNetPreTrainedModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMT5EncoderModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMT5ForConditionalGeneration:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFMT5Model:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 TF_OPENAI_GPT_PRETRAINED_MODEL_ARCHIVE_LIST = None
 
 
 class TFOpenAIGPTDoubleHeadsModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFOpenAIGPTForSequenceClassification:
     def __init__(self, *args, **kwargs):
         requires_tf(self)
 
@@ -914,6 +1306,24 @@ class TFOpenAIGPTModel:
 
 
 class TFOpenAIGPTPreTrainedModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFPegasusForConditionalGeneration:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
+class TFPegasusModel:
     def __init__(self, *args, **kwargs):
         requires_tf(self)
 
@@ -996,6 +1406,15 @@ class TFRobertaPreTrainedModel:
 TF_T5_PRETRAINED_MODEL_ARCHIVE_LIST = None
 
 
+class TFT5EncoderModel:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 class TFT5ForConditionalGeneration:
     def __init__(self, *args, **kwargs):
         requires_tf(self)
@@ -1031,6 +1450,15 @@ class TFAdaptiveEmbedding:
         requires_tf(self)
 
 
+class TFTransfoXLForSequenceClassification:
+    def __init__(self, *args, **kwargs):
+        requires_tf(self)
+
+    @classmethod
+    def from_pretrained(self, *args, **kwargs):
+        requires_tf(self)
+
+
 class TFTransfoXLLMHeadModel:
     def __init__(self, *args, **kwargs):
         requires_tf(self)
@@ -1061,29 +1489,6 @@ class TFTransfoXLPreTrainedModel:
     @classmethod
     def from_pretrained(self, *args, **kwargs):
         requires_tf(self)
-
-
-class TFPreTrainedModel:
-    def __init__(self, *args, **kwargs):
-        requires_tf(self)
-
-    @classmethod
-    def from_pretrained(self, *args, **kwargs):
-        requires_tf(self)
-
-
-class TFSequenceSummary:
-    def __init__(self, *args, **kwargs):
-        requires_tf(self)
-
-
-class TFSharedEmbeddings:
-    def __init__(self, *args, **kwargs):
-        requires_tf(self)
-
-
-def shape_list(*args, **kwargs):
-    requires_tf(shape_list)
 
 
 TF_XLM_PRETRAINED_MODEL_ARCHIVE_LIST = None
