@@ -226,6 +226,17 @@ class BertSelfMiddle(nn.Module):
         attention_scores,
         attention_mask
     ):
+        '''
+        as_stride = []
+        am_stride = []
+        for idx in range(attention_scores.dim()) :
+            as_stride.append(attention_scores.stride(idx))
+            am_stride.append(attention_mask.stride(idx))
+
+        print("Attention Scores", "Size", attention_scores.size(), "Stride", as_stride)
+        print("Attention   Mask", "Size", attention_mask.size(), "Stride", am_stride)
+        '''
+
         attention_scores = attention_scores / math.sqrt(self.attention_head_size)
         # Apply the attention mask is (precomputed for all layers in BertModel forward() function)
         attention_scores = attention_scores + attention_mask
@@ -265,8 +276,8 @@ class BertSelfAttention(nn.Module):
         self.is_decoder = config.is_decoder
 
         self.middle = BertSelfMiddle(config)
-        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
-            self.middle = torch.jit.script(self.middle)
+        #if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+        #    self.middle = torch.jit.script(self.middle)
 
     def transpose_for_scores(self, x):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
@@ -375,14 +386,12 @@ class BertSelfAttention(nn.Module):
 class BertSelfOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Linear(config.hidden_size, config.hidden_size, bias=False)
-        self.bias = nn.Parameter(torch.zeros(config.hidden_size))
+        self.dense = nn.Linear(config.hidden_size, config.hidden_size, bias=True)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
-        hidden_states = hidden_states + self.bias
         hidden_states = self.dropout(hidden_states)
         hidden_states = hidden_states + input_tensor
         hidden_states = self.LayerNorm(hidden_states)
@@ -443,9 +452,7 @@ class BertAttention(nn.Module):
 class BertIntermediate(nn.Module):
     def __init__(self, config):
         super().__init__()
-        #self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
-        self.dense = nn.Linear(config.hidden_size, config.intermediate_size, bias=False)
-        self.bias = nn.Parameter(torch.zeros(config.intermediate_size))
+        self.dense = nn.Linear(config.hidden_size, config.intermediate_size)
         if isinstance(config.hidden_act, str):
             self.intermediate_act_fn = ACT2FN[config.hidden_act]
         else:
@@ -453,7 +460,6 @@ class BertIntermediate(nn.Module):
 
     def forward(self, hidden_states):
         hidden_states = self.dense(hidden_states)
-        hidden_states = hidden_states + self.bias
         hidden_states = self.intermediate_act_fn(hidden_states)
         return hidden_states
 
@@ -461,14 +467,12 @@ class BertIntermediate(nn.Module):
 class BertOutput(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.dense = nn.Linear(config.intermediate_size, config.hidden_size, bias=False)
-        self.bias = nn.Parameter(torch.zeros(config.hidden_size))
+        self.dense = nn.Linear(config.intermediate_size, config.hidden_size, bias=True)
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states, input_tensor):
         hidden_states = self.dense(hidden_states)
-        hidden_states = hidden_states + self.bias
         hidden_states = self.dropout(hidden_states)
         hidden_states = hidden_states + input_tensor
         hidden_states = self.LayerNorm(hidden_states)
