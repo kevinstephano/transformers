@@ -276,8 +276,8 @@ class BertSelfAttention(nn.Module):
         self.is_decoder = config.is_decoder
 
         self.middle = BertSelfMiddle(config)
-        #if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
-        #    self.middle = torch.jit.script(self.middle)
+        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+            self.middle = torch.jit.script(self.middle)
 
     def transpose_for_scores(self, x):
         new_x_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
