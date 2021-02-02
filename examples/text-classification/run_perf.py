@@ -12,8 +12,10 @@ parser.add_argument('--ten_steps', action='store_true', help='Run for just 10 st
 parser.add_argument('--pad', action='store_true', help='Do not create dynamic batches.')
 parser.add_argument('--print-kernel', action='store_true', help='Print Fused Kernels.')
 parser.add_argument('--nojit', action='store_true', help='Turn off jit.')
+parser.add_argument('--te', action='store_true', help='Turn off jit.')
 parser.add_argument('--batch_size', default='256', type=str, help='Batch size.')
 parser.add_argument('--epochs', default='20.0', type=str, help='Number of epochs.')
+parser.add_argument('--fused_adam', action='store_true', help='Use fused adam.  You have to turn this on because APEX might not be installed.')
 
 args = parser.parse_args()
 
@@ -21,9 +23,19 @@ env_args = ['TOKENIZERS_PARALLELISM=true']
 if args.print_kernel :
     env_args += ['PYTORCH_NVFUSER_DUMP=cuda_kernel']
 if args.nojit :
+    env_args += ['PYTORCH_JIT_ENABLE=0']
+else :
+    env_args += ['PYTORCH_JIT_ENABLE=1']
+
+if args.te :
     env_args += ['PYTORCH_NVFUSER_ENABLE=0']
 else :
     env_args += ['PYTORCH_NVFUSER_ENABLE=1']
+
+if args.fused_adam :
+    env_args += ['USE_FUSED_ADAM=1']
+else :
+    env_args += ['USE_FUSED_ADAM=0']
 
 benchmark_cmd = ['python', 'run_glue.py', '--overwrite_output_dir', '--model_name_or_path', 'bert-base-cased', \
                  '--task_name', args.task_name, '--do_train', '--max_seq_length', '128', '--seed', '0',        \

@@ -56,13 +56,14 @@ from ...modeling_utils import (
 from ...utils import logging
 from .configuration_bert import BertConfig
 
-torch._C._jit_set_nvfuser_enabled(True)
-torch._C._jit_set_texpr_fuser_enabled(False)
-torch._C._jit_set_profiling_executor(True)
-torch._C._jit_set_profiling_mode(True)
-torch._C._jit_override_can_fuse_on_cpu(False)
-torch._C._jit_override_can_fuse_on_gpu(False)
-torch._C._jit_set_bailout_depth(20)
+if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+    torch._C._jit_set_nvfuser_enabled(True)
+    torch._C._jit_set_texpr_fuser_enabled(False)
+    torch._C._jit_set_profiling_executor(True)
+    torch._C._jit_set_profiling_mode(True)
+    torch._C._jit_override_can_fuse_on_cpu(False)
+    torch._C._jit_override_can_fuse_on_gpu(False)
+    torch._C._jit_set_bailout_depth(20)
 
 logger = logging.get_logger(__name__)
 
@@ -276,7 +277,7 @@ class BertSelfAttention(nn.Module):
         self.is_decoder = config.is_decoder
 
         self.middle = BertSelfMiddle(config)
-        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+        if os.environ['PYTORCH_JIT_ENABLE'] == '1' :
             self.middle = torch.jit.script(self.middle)
 
     def transpose_for_scores(self, x):
@@ -403,7 +404,7 @@ class BertAttention(nn.Module):
         super().__init__()
         self.self = BertSelfAttention(config)
         self.output = BertSelfOutput(config)
-        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+        if os.environ['PYTORCH_JIT_ENABLE'] == '1' :
             self.output = torch.jit.script(self.output)
         self.pruned_heads = set()
 
@@ -491,10 +492,10 @@ class BertLayer(nn.Module):
             assert self.is_decoder, f"{self} should be used as a decoder model if cross attention is added"
             self.crossattention = BertAttention(config)
         self.intermediate = BertIntermediate(config)
-        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+        if os.environ['PYTORCH_JIT_ENABLE'] == '1' :
             self.intermediate = torch.jit.script(self.intermediate)
         self.output = BertOutput(config)
-        if os.environ['PYTORCH_NVFUSER_ENABLE'] == '1' :
+        if os.environ['PYTORCH_JIT_ENABLE'] == '1' :
             self.output = torch.jit.script(self.output)
 
     def forward(

@@ -62,6 +62,8 @@ from .file_utils import (
 from .modeling_utils import PreTrainedModel
 from .models.auto.modeling_auto import MODEL_FOR_QUESTION_ANSWERING_MAPPING
 from .optimization import Adafactor, AdamW, get_scheduler
+if os.environ['USE_FUSED_ADAM'] == '1' :
+    from apex.optimizers import FusedAdam
 from .tokenization_utils_base import PreTrainedTokenizerBase
 from .trainer_callback import (
     CallbackHandler,
@@ -570,12 +572,18 @@ class Trainer:
                     "weight_decay": 0.0,
                 },
             ]
-            optimizer_cls = Adafactor if self.args.adafactor else AdamW
+            if os.environ['USE_FUSED_ADAM'] == '1' :
+                optimizer_cls = Adafactor if self.args.adafactor else FusedAdam
+            else :
+                optimizer_cls = Adafactor if self.args.adafactor else AdamW
             if self.args.adafactor:
                 optimizer_cls = Adafactor
                 optimizer_kwargs = {"scale_parameter": False, "relative_step": False}
             else:
-                optimizer_cls = AdamW
+                if os.environ['USE_FUSED_ADAM'] == '1' :
+                    optimizer_cls = FusedAdam
+                else :
+                    optimizer_cls = AdamW
                 optimizer_kwargs = {
                     "betas": (self.args.adam_beta1, self.args.adam_beta2),
                     "eps": self.args.adam_epsilon,
